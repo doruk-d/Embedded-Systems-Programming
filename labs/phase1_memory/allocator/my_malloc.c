@@ -1,11 +1,14 @@
-#define _DEFAULT_SOURCE
-
-#include <unistd.h>
+#include "cmsis_compiler.h"
 #include <stddef.h>
 #include <stdint.h>
 #include <stdalign.h>
 
 #define ALIGNMENT (alignof(max_align_t))
+
+extern char _sheap;
+extern char _sstack;
+
+static void *current_break = NULL;
 
 typedef union block_header{
     struct{
@@ -18,11 +21,11 @@ typedef union block_header{
     max_align_t _align_;
 }block_header_t;
 
-
 static block_header_t *head = NULL;
 static block_header_t *tail = NULL;
 
 static inline size_t align(size_t size);
+static void *_sbrk_(size_t size);
 static block_header_t *request_space(size_t total_size);
 static block_header_t *find_free_block(size_t total_size);
 
@@ -31,9 +34,24 @@ static inline size_t align(size_t size){
     return (size + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
 }
 
-// asks for additional memory from OS when needed
+static void *_sbrk_(size_t size){
+    if (current_break == NULL)
+        current_break = (void *)&_sheap;
+
+    char *prev_break = (char*)current_break;
+    char *next_break = (char *)prev_break + size;  
+    
+    if (next_break > (char *)&_sstack)
+        return (void*)-1;
+
+    current_break = (void *)next_break;
+
+    return (void *)prev_break;
+}
+
+// asks for additional memory from mcpu when needed
 static block_header_t *request_space(size_t total_size){
-    block_header_t *block = (block_header_t *)sbrk(total_size);
+    block_header_t *block = (block_header_t *)_sbrk_(total_size);
 
     if (block == (void *)-1)
         return NULL;
@@ -54,12 +72,21 @@ static block_header_t *find_free_block(size_t total_size){
 }
 
 void *my_malloc(size_t size){
-    if (size > (PTRDIFF_MAX - ALIGNMENT))
-        return NULL;
+    __disable_irq();
+
+    if (current_break == NULL)
+        current_break = (void *)&_sheap;
+    
+    void *result_p = NULL;
+
+    size_t heap_size = (size_t)((char *)&_sstack - (char *)current_break);
+
+    if (size > (heap_size - ALIGNMENT))
+        goto exit_malloc;
 
     size_t aligned_size = align(size);
-    if (aligned_size > (PTRDIFF_MAX - sizeof(block_header_t)))
-        return NULL;
+    if (aligned_size > (heap_size - sizeof(block_header_t)))
+        goto exit_malloc;
 
 
     size_t total_size = aligned_size + sizeof(block_header_t);
@@ -69,7 +96,7 @@ void *my_malloc(size_t size){
         block_header_t *new_block = request_space(total_size);
         
         if (new_block == NULL)
-            return NULL;
+            goto exit_malloc;
 
         new_block->size_total = total_size;
         new_block->is_free = 0;
@@ -78,7 +105,8 @@ void *my_malloc(size_t size){
         head = new_block;
         tail = new_block;
         
-        return new_block + 1;
+        result_p = new_block + 1;
+        goto exit_malloc;
     }
     
     block_header_t *free_block = find_free_block(total_size);
@@ -88,7 +116,8 @@ void *my_malloc(size_t size){
         
         if (new_size < (sizeof(block_header_t) + ALIGNMENT)){
             free_block->is_free = 0;
-            return free_block + 1;
+            result_p = free_block + 1;
+            goto exit_malloc;
         }
 
         // splitting 
@@ -108,14 +137,15 @@ void *my_malloc(size_t size){
             tail = remainder;
 
 
-        return free_block + 1;
+        result_p = free_block + 1;
+        goto exit_malloc;
     }
 
 
     block_header_t *new_free_block = request_space(total_size);
 
     if (new_free_block == NULL)
-        return NULL;
+        goto exit_malloc;
 
     new_free_block->size_total = total_size;
     new_free_block->is_free = 0;
@@ -125,23 +155,32 @@ void *my_malloc(size_t size){
 
     tail = new_free_block;
 
-    return new_free_block + 1;
+    result_p = new_free_block + 1;
+    goto exit_malloc;
+
+exit_malloc:
+    __enable_irq();
+    return result_p;
 
 }
 
 void my_free(void *ptr){
+    __disable_irq();
+
     if (!ptr)
-        return;
+        goto exit_free;
 
     block_header_t *current_ptr = (block_header_t *)ptr - 1;
     
     // double free check
     if (current_ptr->is_free)
-        return;
+        goto exit_free;
 
     current_ptr->is_free = 1;
     
     if (current_ptr->prev != NULL && current_ptr->prev->is_free == 1){
+        if (tail == current_ptr)
+            tail = current_ptr->prev;
         
         current_ptr->prev->size_total += current_ptr->size_total;
         current_ptr->prev->next = current_ptr->next;
@@ -154,6 +193,8 @@ void my_free(void *ptr){
     }
 
     if (current_ptr->next != NULL && current_ptr->next->is_free == 1){
+        if (tail == current_ptr->next)
+            tail = current_ptr;
 
         current_ptr->size_total += current_ptr->next->size_total;
 
@@ -163,12 +204,12 @@ void my_free(void *ptr){
             current_ptr->next->prev = current_ptr;
     }
 
-    if (current_ptr->next == NULL)
-        tail = current_ptr;
-
     if (current_ptr->prev == NULL)
         head = current_ptr;
 
+exit_free:
+    __enable_irq();
+    return;
 }
 
 void *my_calloc(size_t nmemb, size_t size){
@@ -183,7 +224,7 @@ void *my_calloc(size_t nmemb, size_t size){
         *(mem + i)= 0;
 
     
-    return mem;
+    return (void *)mem;
 }
 
 void *my_realloc(void *ptr, size_t size){
@@ -214,4 +255,22 @@ void *my_realloc(void *ptr, size_t size){
     my_free(ptr);
 
     return mem;
+}
+
+void wipe_heap(void){
+    __disable_irq();
+
+    if (current_break != NULL){
+        char *heap_start = (char *)&_sheap;
+
+        while (heap_start < (char *)current_break)
+            *heap_start++ = 0;
+    }
+
+    head = NULL;
+    tail = NULL;
+    
+    current_break = (void *)&_sheap;
+
+    __enable_irq();
 }

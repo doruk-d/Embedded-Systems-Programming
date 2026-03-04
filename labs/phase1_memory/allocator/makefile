@@ -1,17 +1,15 @@
 # lang rules
-CC:= gcc
-CFLAGS:= -Wall -Wextra -Werror -Wpedantic -g \
-	-Wno-unused-parameter \
-	-D_POSIX_C_SOURCE=200809L \
-	-O2 \
-	-std=c11 \
+CC:= arm-none-eabi-gcc
 
+MCU_FLAGS:= -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb 
+CFLAGS:= $(MCU_FLAGS) -Wall -O0 -g -I/usr/local/include/cmsis/CMSIS/Core/Include/ 
+LDFLAGS:= $(MCU_FLAGS) -T linker.ld -nostartfiles --specs=nano.specs --specs=nosys.specs
 DEPFLAGS:= -MMD -MP
-VFLAGS:= --leak-check=full --show-leak-kinds=all --track-origins=yes --tool=memcheck
 
 # files
-TARGET:= my_malloc
 BUILD_DIR:= build
+
+TARGET:= $(BUILD_DIR)/my_malloc.elf
 
 
 SRC:= my_malloc.c test_driver.c
@@ -21,8 +19,8 @@ DEPS:= $(OBJS:%.o=%.d)
 #rules
 all: $(TARGET)
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@ 
+$(TARGET): $(OBJS) | $(BUILD_DIR)
+	$(CC) $(LDFLAGS) $^ -o $@ 
 
 $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) $< -c -o $@ 
@@ -31,20 +29,13 @@ $(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# utilities
-test: $(TARGET)
-	./$(TARGET)
-
-
-valgrind: $(TARGET)
-	valgrind $(VFLAGS) ./$(TARGET)
-
-
 clean:
 	rm -rf $(TARGET) $(BUILD_DIR)
 
 
 -include $(DEPS)
 
+flash:
+	openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c "init" -c "reset halt" -c "program $(TARGET) verify reset exit"
 
-.PHONY: all test valgrind clean
+.PHONY: all  clean
