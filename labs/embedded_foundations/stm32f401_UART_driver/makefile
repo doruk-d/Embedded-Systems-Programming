@@ -1,17 +1,17 @@
-CC = arm-none-eabi-gcc
+CC := arm-none-eabi-gcc
+
+MCU_FLAGS := -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb 
+CFLAGS := $(MCU_FLAGS) -Wall -O0 -g -MMD -MP 
+LDFLAGS := $(MCU_FLAGS) -T linker.ld -nostartfiles --specs=nano.specs --specs=nosys.specs 
 
 
-CFLAGS = -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wall -O0 -g -MMD -MP
-LDFLAGS = -T linker.ld -nostdlib
+BUILD_DIR := build
 
 
-BUILD_DIR = build
-
-
-TARGET = $(BUILD_DIR)/output.elf
-SRCS = startup.c uart.c main.c system_clock.c 
-OBJS = $(SRCS:%.c=$(BUILD_DIR)/%.o)
-DEPS = $(OBJS:.o=.d)
+TARGET := $(BUILD_DIR)/output.elf
+SRCS := startup.c uart.c main.c system_clock.c 
+OBJS := $(SRCS:%.c=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
 
 
 all: $(TARGET)
@@ -39,5 +39,5 @@ flash: $(TARGET)
 clean:
 	rm -rf $(BUILD_DIR)
 
-.PHONY: all clean
+.PHONY: all flash clean
 
