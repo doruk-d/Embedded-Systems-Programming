@@ -13,5 +13,6 @@ void uart_putc(char c);
 void uart_puts(char *s);
 char uart_getc(void);
 void uart_gets(char *s, uint32_t max_len);
+void uart_putint(uint32_t value);
 
 #endif

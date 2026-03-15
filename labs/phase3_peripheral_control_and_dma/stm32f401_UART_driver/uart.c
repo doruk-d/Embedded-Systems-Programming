@@ -106,3 +106,19 @@ void uart_gets(char *s, uint32_t max_len){
 
     s[i] = '\0';
 }
+
+void uart_putint(uint32_t value){
+    char buff[10]; 
+
+    int8_t i = 0;
+
+    do{
+        uint32_t new_val = value % 10;
+        uint32_t ch = new_val + '0';
+        buff[i++] = ch;
+        value /= 10;
+    } while (value);
+
+    for (int8_t j = i - 1; j >= 0; j--)
+        uart_putc(buff[j]);
+}
