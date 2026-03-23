@@ -84,6 +84,104 @@
 - Uncovered a `size_t` overflow that wrapped the size calculation, undersizing the pointer array and causing out-of-bounds writes during allocation tracking, triggering HardFault.
 - Resolved by using a statically sized array with compile-time macros.
 
+### Memory Layout Verification
+
+- The following output of `arm-none-eabi-readelf` verifies that the linker script produced the correct segment layout. The `PhysAddr/VirtAddr` divergence on segment 01 is what initiates the copy-down at startup.
+- In the segment 02,  discrepancy between `FileSiz/Memsiz` indicates the predefined stack size is reserved for runtime stack operations.
+```bash
+$ arm-none-eabi-readelf -l  build/my_malloc.elf 
+
+
+Elf file type is EXEC (Executable file)
+Entry point 0x8000000
+There are 3 program headers, starting at offset 52
+
+Program Headers:
+  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+  LOAD           0x010000 0x08000000 0x08000000 0x00d78 0x00d78 R E 0x10000
+  LOAD           0x020000 0x20000000 0x08000d78 0x00000 0x00160 RW  0x10000
+  LOAD           0x007000 0x20017000 0x20017000 0x00000 0x01000 RW  0x10000
+
+ Section to Segment mapping:
+  Segment Sections...
+   00     .text .rodata 
+   01     .data .bss 
+   02     .stack 
+```
+- In the following section, the symbol table ( `.symtab` ) illustrates sections, linker script boundary symbols and global variable addresses aligned in the defined memory map.
+- As seen below, the vector table is placed at the base of flash (`08000000`) as required by the Cortex-M boot sequence.
+- `_sidata` aligns with the `PhysAddr` of segment 01, confirming the load address of `.data` in flash memory.
+- The stack size can be verified through computing _estack - _sstack = 0x20018000 - 0x20017000 = 0x1000 (4KB), aligning with the `_stack_size` symbol.
+```bash
+$ arm-none-eabi-readelf -s  build/my_malloc.elf 
+
+Symbol table '.symtab' contains 99 entries: # relevant entries shown, ... denotes omitted
+   Num:    Value  Size Type    Bind   Vis      Ndx Name
+     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND 
+     1: 08000000     0 SECTION LOCAL  DEFAULT    1 .text
+     2: 08000af8     0 SECTION LOCAL  DEFAULT    2 .rodata
+     3: 20000000     0 SECTION LOCAL  DEFAULT    3 .data
+     4: 20000000     0 SECTION LOCAL  DEFAULT    4 .bss
+     5: 20017000     0 SECTION LOCAL  DEFAULT    5 .stack
+     ...
+    72: 08000d78     0 NOTYPE  GLOBAL DEFAULT  ABS _sidata
+     ...
+    74: 20000160     0 NOTYPE  GLOBAL DEFAULT    4 _sheap
+    75: 20000000     0 NOTYPE  GLOBAL DEFAULT    4 _sbss
+     ...
+    79: 20000000     0 NOTYPE  GLOBAL DEFAULT    3 _sdata
+     ...
+    82: 20000160     0 NOTYPE  GLOBAL DEFAULT    4 _ebss
+     ...
+    85: 08000000    16 OBJECT  GLOBAL DEFAULT    1 vector_table
+     ...
+    89: 00001000     0 NOTYPE  GLOBAL DEFAULT  ABS _stack_size
+     ...
+    93: 20017000     0 NOTYPE  GLOBAL DEFAULT    4 _stack_start
+    94: 20017000     0 NOTYPE  GLOBAL DEFAULT    5 _sstack
+     ...
+    96: 20018000     0 NOTYPE  GLOBAL DEFAULT    5 _estack
+    97: 20000000     0 NOTYPE  GLOBAL DEFAULT    3 _edata
+```
+
+- In the following section, `objdump -S` output illustrates the full startup sequence in `ResetHandler`, such as `.data` copy,`.bss` zero and the stack painting with the canary pattern. Before, transfering control to `main()`, which terminates in an infinite loop.
+```bash
+$ arm-none-eabi-objdump -S build/my_malloc.elf 
+
+build/my_malloc.elf:     file format elf32-littlearm
+
+Disassembly of section .text: # relevant entries shown, ... denotes omitted
+
+08000000 <vector_table>:
+ 8000000:   00 80 01 20 cd 04 00 08 00 00 00 00 65 05 00 08
+                            .
+                            .
+080004cc <ResetHandler>:
+ ...
+    while (s_data < e_data)
+ 80004f4:   e007        b.n 8000506 <ResetHandler+0x3a>
+        *s_data++ = *f_data++;
+ ...
+    while (s_bss < e_bss)
+ 800050e:   e004        b.n 800051a <ResetHandler+0x4e>
+        *s_bss++ = 0;
+ ...
+    while (s_stack < (uint32_t *)current_sp)
+ 8000522:   e004        b.n 800052e <ResetHandler+0x62>
+        *s_stack++ = 0xDEADBEEF;
+ 8000560:   deadbeef    .word 0xdeadbeef
+ ...
+    main();
+ 800053a:   f000 f817   bl  800056c <main>
+                            .
+                            .
+0800056c <main>:
+ ...
+    while (1);
+ 800058c:   bf00        nop
+ 800058e:   e7fd        b.n 800058c <main+0x20>
+ ...
+```
 ### Scope
 
 - As stated, this project is purely educational and is not intended for production use. 
