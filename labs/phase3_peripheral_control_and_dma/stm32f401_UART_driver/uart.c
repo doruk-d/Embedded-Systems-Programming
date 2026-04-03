@@ -25,8 +25,8 @@
 
 #define PIN 2
 #define PIN2 3
-#define RX_BUFF_SIZE 128
-#define TX_BUFF_SIZE 128
+#define RX_BUFF_SIZE 256
+#define TX_BUFF_SIZE 256
 
 static volatile uint8_t rx_buff[RX_BUFF_SIZE];
 static volatile uint32_t head_rx = 0;
