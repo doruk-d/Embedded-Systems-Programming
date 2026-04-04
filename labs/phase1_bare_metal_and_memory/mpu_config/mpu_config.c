@@ -22,15 +22,9 @@ extern uint32_t _estack;
 extern uint32_t _sstack;
 
 static inline uint32_t mpu_size_val(uint32_t size){
-    uint32_t size_new = 0;
     if (size <= 32)
-        size_new = 32;
-    else{
-        size_new = 1U << (32 - __builtin_clz(size - 1));
-    }
-
-    return ((31 - __builtin_clz(size_new)) - 1);
-
+        return 4;
+    return (32 - __builtin_clz(size - 1)) - 1;
 }
 
 mpu_err_t mpu_init(void){
