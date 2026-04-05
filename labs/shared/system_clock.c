@@ -1,3 +1,4 @@
+#include "system_clock.h"
 #include <stdint.h>
 
 #define GPIOA_BASE 0x40020000
