@@ -1,7 +1,8 @@
 # lang rules
 CC:= arm-none-eabi-gcc
 
-INCLUDES:= -I../../phase3_peripheral_control_and_dma/stm32f401_UART_driver/ \
+INCLUDES:= -I../../phase4_peripheral_control_and_dma/stm32f401_UART_driver/ \
+		   -I../../shared/ \
 		   -I/usr/local/include/cmsis/CMSIS/Core/Include \
 		   -I/usr/local/include/cmsis/CMSIS/Device/ST/STM32F4xx/Include
 
@@ -15,7 +16,7 @@ BUILD_DIR:= build
 
 TARGET:= $(BUILD_DIR)/my_malloc.elf
 
-vpath %c ../../phase3_peripheral_control_and_dma/stm32f401_UART_driver/
+vpath %c ../../phase4_peripheral_control_and_dma/stm32f401_UART_driver/ ../../shared/
 
 SRC:= my_malloc.c startup.c test_driver.c uart.c system_clock.c
 OBJS:= $(addprefix $(BUILD_DIR)/, $(notdir $(SRC:.c=.o)))
