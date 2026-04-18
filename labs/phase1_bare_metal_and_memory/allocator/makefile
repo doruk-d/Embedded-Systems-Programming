@@ -18,7 +18,7 @@ TARGET:= $(BUILD_DIR)/my_malloc.elf
 
 vpath %c ../../phase4_peripheral_control_and_dma/stm32f401_UART_driver/ ../../shared/
 
-SRC:= my_malloc.c startup.c test_driver.c uart.c system_clock.c
+SRC:= my_malloc.c startup.c test_driver.c uart.c system_clock.c fault_handlers.c
 OBJS:= $(addprefix $(BUILD_DIR)/, $(notdir $(SRC:.c=.o)))
 DEPS:= $(OBJS:%.o=%.d) 
 
