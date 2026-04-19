@@ -46,6 +46,7 @@ void ResetHandler(){
     while (s_stack < (uint32_t *)current_sp)
         *s_stack++ = 0xDEADBEEF;
 
+    mpu_init();
     system_clock_init();
 
     extern int main(void);
