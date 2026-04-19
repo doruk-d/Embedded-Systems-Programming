@@ -5,23 +5,27 @@
 - This project aims to build intuition for low-level memory management and systems programming in C.
 
 ### Project Structure
-```   
+```
     allocator/
     ├── makefile
-    ├── my_malloc.c
-    ├── my_malloc.h
-    ├── my_malloc_internal.h
-    ├── startup.c
-    ├── test_driver.c
-    ├── README.md
-    └── build/
+    ├── docs/
+    │   └── README.md
+    ├── include/
+    │   └── my_malloc.h
+    └── src/
+        ├── my_malloc_internal.h
+        └── my_malloc.c
+
+    tests/
+    └── test_allocator/
+        └── test_allocator.c
 ```
 
 **Note**: Uart driver sourced from
-`../../phase4_peripheral_control_and_dma/stm32f401_UART_driver/`
+`drivers/uart/`
 
 linker script sourced from
-`../../shared/`
+`boot/stm32f4x/`
 
 
 

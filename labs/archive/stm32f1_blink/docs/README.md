@@ -13,14 +13,15 @@
 
 ### Project Structure
 ```
-    blink/
+    stm32f1_blink/
     ├── linker.ld
-    ├── main.c
     ├── makefile
     ├── setup.resc
-    ├── startup.c
-    ├── README.md
-    └── build/
+    ├── docs/
+    │   └── README.md
+    └── src/
+        ├── blink.c
+        └── startup.c
 ```
 ### How to Run
 

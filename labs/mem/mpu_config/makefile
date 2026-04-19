@@ -1,21 +1,21 @@
 CC := arm-none-eabi-gcc
 
-INCLUDES := -I../../shared
+INCLUDES := -I../../boot/stm32f4x/
 
 MCUFLAGS := -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb
 CFLAGS := $(MCUFLAGS) -Wall -O0 -g $(INCLUDES)
-LDFLAGS := $(MCUFLAGS) -T ../../shared/linker.ld -nostartfiles --specs=nano.specs --specs=nosys.specs
+LDFLAGS := $(MCUFLAGS) -T ../../boot/stm32f4x/linker.ld -nostartfiles --specs=nano.specs --specs=nosys.specs
 DEPFLAGS := -MMD -MP
 
 BUILD_DIR := build
 
-TARGET := $(BUILD_DIR)/mpu_config.elf
+TARGET := $(BUILD_DIR)/test_mpu_config.elf
 
-vpath %.c ../../shared
+vpath %.c ../../boot/stm32f4x/ ../../tests/test_mpu/
 
 SRC := mpu_config.c test_mpu.c startup.c fault_handlers.c system_clock.c
-OBJS := $(addprefix $(BUILD_DIR)/, $(notdir $(SRC:.c=.o)))
-DEPS := $(OBJS:%.o=%.d)
+OBJS := $(SRC:%.c=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
 
 all: $(TARGET)
 
@@ -29,7 +29,7 @@ $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
 clean:
-	rm -rf $(TARGET) $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)
 
 -include $(DEPS)
 
