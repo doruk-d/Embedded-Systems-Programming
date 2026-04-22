@@ -28,7 +28,6 @@ SECTIONS
 
     .data : 
     {
-        . = ALIGN(8);
         _sdata = . ;
         *(.data*)
         . = ALIGN(8);
@@ -44,7 +43,7 @@ SECTIONS
         *(COMMON)
         . = ALIGN(8);
         _ebss = . ;
-        . = ALIGN(1 << LOG2CEIL(. - _sdata));
+        . = _sdata + (1 << LOG2CEIL(MAX(. - _sdata, 32)));
         _ebss_mpu = . ;
 
     } > RAM
