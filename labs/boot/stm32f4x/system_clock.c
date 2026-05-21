@@ -1,45 +1,49 @@
 #include "system_clock.h"
 #include <stdint.h>
 
-#define GPIOA_BASE 0x40020000
 #define RCC_BASE 0x40023800
+#define RCC_CR *(volatile uint32_t *)RCC_BASE
+#define RCC_PLLCFGR *(volatile uint32_t *)(RCC_BASE + 0x04)
+#define RCC_CFGR *(volatile uint32_t *)(RCC_BASE + 0x08)
 
-#define RCC_CR (*(volatile uint32_t *)RCC_BASE)
-#define RCC_PLLCFGR (*(volatile uint32_t *)(RCC_BASE + 0x04))
-#define RCC_CFGR (*(volatile uint32_t *)(RCC_BASE + 0x08))
-#define RCC_APB1ENR_PWREN (*(volatile uint32_t *)(RCC_BASE + 0x40))
-#define FLASH_ACR (*(volatile uint32_t *)0x40023C00)
+#define FLASH_BASE 0x40023C00
+#define FLASH_ACR *(volatile uint32_t *)FLASH_BASE
 
 void system_clock_init(void){
-    // step 1 enable the clock to the power controller
-    RCC_APB1ENR_PWREN |= (1 << 28);
+    // turn the PLL clock off 
+    RCC_CR &= ~(1 << 24);
 
-    // step 2 enable HSE
+    // make sure it is locked
+    while(((RCC_CR >> 25) & 0x1));
+
+    // set HSE on and wait for the signals to settle
     RCC_CR |= (1 << 16);
-    // wait for it to lock
-    while (!((RCC_CR >> 17) & 0x1));
 
-    // step 3 set the flash latency
-    FLASH_ACR = (2 << 0);
-    
-    // step 4 set the source for clock in this case HSE
-    RCC_PLLCFGR = (8 << 0) |    // PLLM = 8
-                  (336 << 6) |  // PLLN = 336
-                  (1 << 16) |   // PLLP = 4
-                  (1 << 22) |   // HSE
-                  (7 << 24);    // PLLQ = 7  
+    while(!((RCC_CR >> 17) & 0x1));
 
-    // step 5 set PLL on in RCC_CR
-    RCC_CR |= (1 << 24);
-    // wait for it to lock
-    while (!((RCC_CR >> 25) & 0x1));
-    
-    // set APB1 prescaler on
+    // configure PLL
+    RCC_PLLCFGR = (8 << 0) | // PLLM 
+                  (168 << 6) | // PLLN
+                  (1 << 16) | // PLLP
+                  (1 << 22) | // PLLSRC
+                  (7 << 24); // PLLQ
+
+    // enable data, instruction caches, prefetch for lower latency and flash latency for safe reads
+    FLASH_ACR |= (1 << 10) | (1 << 9) | (1 << 8) | (2 << 0);
+
+    // set the prescalers for APBx buses
+    RCC_CFGR &= ~((7 << 13) | (7 << 10));
     RCC_CFGR |= (4 << 10);
 
-    // step 6 change the system clock to PLL
+    // set the PLL on wait for it to settle then set it as sysclk
+    RCC_CR |= (1 << 24);
+
+    while(!((RCC_CR >> 25) & 0x1));
+
     RCC_CFGR |= (2 << 0);
-    // wait for switch to complete
-    while (((RCC_CFGR >> 2) & 0x3) != 0x2);
+
+    // wait for it to lock
+    while((((RCC_CFGR >> 2) & 0x3) != 0x2));
 
 }
+
