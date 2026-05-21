@@ -4,8 +4,6 @@
 #define DWT_CTRL *(volatile uint32_t *)0xE0001000
 #define DWT_CYCCNT *(volatile uint32_t *)0xE0001004 
 
-#define DWT_CYCCNT_ADDR 0xE0001004
-
 typedef enum{
     SUPPORTED_CYCLE_COUNTER = 0,
     UNSUPPORTED_CYCLE_COUNTER

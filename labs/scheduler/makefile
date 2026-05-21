@@ -17,7 +17,7 @@ vpath %.S src/
 
 TARGET:= $(BUILD_DIR)/scheduler.elf
 SRCS:= test_scheduler.c startup.c mpu_config.c system_clock.c dwt.c  scheduler.c  svc.c  systick.c fault_handlers.c measure_gpio.c
-ASM_SRCS:= context_switch.S
+ASM_SRCS:= context_switch.S systick_asm.S
 OBJS:= $(SRCS:%.c=$(BUILD_DIR)/%.o)
 ASM_OBJS:= $(ASM_SRCS:%.S=$(BUILD_DIR)/%.o)
 DEPS:= $(OBJS:.o=.d)
@@ -28,10 +28,10 @@ all: $(TARGET)
 $(TARGET): $(OBJS) $(ASM_OBJS) $(UART_LIB) | $(BUILD_DIR)
 	$(CC) $(LDFLAGS) $^ -o $@
 
-$(BUILD_DIR)/%.o: %.S | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) $< -c -o $@
 
-$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: %.S | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(DEPFLAGS) $< -c -o $@
 
 $(BUILD_DIR):
