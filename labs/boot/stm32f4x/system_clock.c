@@ -24,7 +24,7 @@ void system_clock_init(void){
     // configure PLL
     RCC_PLLCFGR = (8 << 0) | // PLLM 
                   (168 << 6) | // PLLN
-                  (1 << 16) | // PLLP
+                  (0 << 16) | // PLLP
                   (1 << 22) | // PLLSRC
                   (7 << 24); // PLLQ
 
