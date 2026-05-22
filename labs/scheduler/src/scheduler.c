@@ -32,7 +32,6 @@ task_t *current_task = NULL;
 task_t *next_task = NULL;
 
 volatile uint32_t sw_start_cyccnt, sw_end_cyccnt;
-volatile uint32_t wfi_latency_st;
 
 task_init_t task_create(void *arg, void (*task_func)(void *)){
     if (task_func == NULL)
@@ -95,13 +94,8 @@ void scheduler_init(void){
     
     // if the linked list empty mcu should halt
     if (head == NULL){
-        while(1){
-            wfi_latency_st = DWT_CYCCNT;
-            __asm__ volatile(
-                    "isb    \n"
-                    "wfi    \n"
-                    );
-        }
+        while(1)
+            __asm__ volatile("wfi");
     }
 
     current_task = NULL;
@@ -130,13 +124,8 @@ static void task_remove(void){
     if (task_to_remove->next == task_to_remove){
         head = tail = NULL;
         // if all the tasks are removed mcu should be in low power mode
-        while(1){
-            wfi_latency_st = DWT_CYCCNT;
-            __asm__ volatile(
-                    "isb    \n"
-                    "wfi    \n"
-                    );
-        }
+        while(1)
+            __asm__ volatile("wfi");
     }
     else{
         task_t *r_task = head;

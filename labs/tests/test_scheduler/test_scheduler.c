@@ -16,15 +16,13 @@ void task8(void* ptr);
 void task9(void*);
 void task10(void*);
 
-extern volatile uint32_t excp_start_cyccnt, sw_start_cyccnt, sw_end_cyccnt;
-
 int main(void){
     uart_init(9600);
     
     gpio_init();
 
     uint32_t x = 9;
-
+    
     if (task_create(NULL,&task1) == FAIL) uart_puts("FAIL_1\n"); 
     if (task_create(NULL, &task2) == FAIL) uart_puts("FAIL_2\n"); 
     if (task_create(NULL, NULL) == FAIL) uart_puts("FAIL_3\n");

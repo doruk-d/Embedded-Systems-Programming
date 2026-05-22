@@ -10,8 +10,6 @@
 #define SYSTICK_FREQ 1000
 #define RELOAD_VAL ((CPU_FREQ / SYSTICK_FREQ) - 1)
 
-volatile uint32_t wfi_latency_end;
-
 void systick_init(void){
     STK_LOAD = RELOAD_VAL;
 
@@ -19,4 +17,8 @@ void systick_init(void){
 
     STK_CTRL = (1 << 2) | (1 << 1) | (1 << 0);
     
+}
+
+void SysTick_Handler(void){
+    scheduler_run();
 }
