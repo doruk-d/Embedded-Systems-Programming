@@ -77,11 +77,22 @@ Compared to FreeRTOS's latency of ~80 cycles, however not a fair comparison due 
 
 ### Exception Dispatch
 
-![First Exception Dispatch](img/first.png)
+### Exception Dispatch
 
-![Steady State Exception Dispatch](img/steady_state.png)
+<p align="center">
+  <b>First Exception Dispatch</b><br/>
+  <img width="800" alt="First Exception Dispatch" src="https://github.com/user-attachments/assets/3b7dfa22-d71b-4d27-b4e0-b3dcbadcfe8e" />
+</p>
 
-![Repeated context switch pattern](img/pattern.png)
+<p align="center">
+  <b>Steady State Exception Dispatch</b><br/>
+  <img width="800" alt="Steady State Exception Dispatch" src="https://github.com/user-attachments/assets/6ea4ea05-cb47-455a-96df-56e68ec48585" />
+</p>
+
+<p align="center">
+  <b>Repeated Context Switch Pattern</b><br/>
+  <img width="800" alt="Repeated Context Switch Pattern" src="https://github.com/user-attachments/assets/62c1538a-41eb-4a63-aa3c-d1ddd68e3e0c" />
+</p>
 
 As seen above, first dispatch takes ~250ns and steady state ~292ns, however the tool used during measurement samples at 24MHz, giving ±3 cycles margin of error. The 42ns difference between the two measurements is within the analyzer's resolution, so it may or may not be architectural.
 
