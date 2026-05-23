@@ -77,8 +77,6 @@ Compared to FreeRTOS's latency of ~80 cycles, however not a fair comparison due 
 
 ### Exception Dispatch
 
-### Exception Dispatch
-
 <p align="center">
   <b>First Exception Dispatch</b><br/>
   <img width="800" alt="First Exception Dispatch" src="https://github.com/user-attachments/assets/3b7dfa22-d71b-4d27-b4e0-b3dcbadcfe8e" />
