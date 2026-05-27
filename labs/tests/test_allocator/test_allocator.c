@@ -17,15 +17,15 @@ void test_oom_and_wipe(void);
 void test_swiss_cheese(void);
 
 int main(){
-    uart_init(9600);
+    uart_init(115200);
     
-    uart_puts("---Allocator Test---\r\n");
+    uart_printf("---Allocator Test---\r\n");
 
     test_oom_and_wipe();        
     test_swiss_cheese();  
 
 
-    uart_puts("---All Tests Complete. HALTING---\r\n");
+    uart_printf("---All Tests Complete. HALTING---\r\n");
 
     while (1);
 
@@ -41,15 +41,13 @@ void stack_size_check(){
 
     size_t size = count * sizeof(uint32_t);
 
-    uart_puts("---stack size: ---\r\n");
-    uart_putint(size);
-    uart_putc('\r');
-    uart_putc('\n');
+    uart_printf("---stack size: ---\r\n");
+    uart_printf("%d\r\n", size);
 
     if (size == (size_t)&_stack_size)
-        uart_puts("---PASS, maximum depth of the stack has been reached---\r\n");
+        uart_printf("---PASS, maximum depth of the stack has been reached---\r\n");
     else if (size > (size_t)&_stack_size)
-        uart_puts("---STACK OVERFLOW---\r\n");
+        uart_printf("---STACK OVERFLOW---\r\n");
 
 }
 
@@ -78,11 +76,11 @@ void test_oom_and_wipe(void){
     stack_size_check();
 
     if (count_oom == count_wipe && oom_first == wipe_first)
-        uart_puts("---PASS, entire heap utilized and reclaimed with no negative consequences---\r\n");
+        uart_printf("---PASS, entire heap utilized and reclaimed with no negative consequences---\r\n");
     else if (count_oom > count_wipe)
-        uart_puts("---MEMORY LEAK, wipe_heap() has failed to reclaim memory---\r\n");
+        uart_printf("---MEMORY LEAK, wipe_heap() has failed to reclaim memory---\r\n");
     else if (count_oom < count_wipe)
-        uart_puts("---MEMORY CORRUPTION, wipe_heap() has corrupted the memory boundaries---\r\n");
+        uart_printf("---MEMORY CORRUPTION, wipe_heap() has corrupted the memory boundaries---\r\n");
     
     wipe_heap();
 }
@@ -91,7 +89,7 @@ void test_swiss_cheese(void){
     size_t size = (size_t)BLOCK_SIZE;
     void *ptr = my_malloc(size);
     if (!ptr){
-        uart_puts("---FAIL, failed to allocate memory for the test swiss cheese---\r\n");
+        uart_printf("---FAIL, failed to allocate memory for the test swiss cheese---\r\n");
         return;
     }
 
@@ -103,7 +101,7 @@ void test_swiss_cheese(void){
     while (size > (size_t)TINY_SIZE){
         void *fragm = my_malloc((size_t)TINY_SIZE);
         if (!fragm){
-            uart_puts("---FAIL, failed to allocate tiny segments in the block---\r\n");
+            uart_printf("---FAIL, failed to allocate tiny segments in the block---\r\n");
             wipe_heap();
             return;
         }
@@ -116,11 +114,11 @@ void test_swiss_cheese(void){
     
     for (uint32_t j = 0; j < i; j++){
         if (*(uint32_t *)p_arr[j] != 0xAA){
-            uart_puts("---MEMORY LEAK, metadata from one of the blocks overflowed into another---\r\n");
+            uart_printf("---MEMORY LEAK, metadata from one of the blocks overflowed into another---\r\n");
             return;
         }
     }
 
-    uart_puts("--PASS, test_swiss_cheese()---\r\n");
+    uart_printf("--PASS, test_swiss_cheese()---\r\n");
 
 }
