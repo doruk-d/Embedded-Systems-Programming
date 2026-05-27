@@ -15,7 +15,7 @@ OBJS := $(SRCS:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 TEST_TARGET := $(BUILD_DIR)/test_output.elf
-TEST_SRCS := test_uart.c startup.c  system_clock.c fault_handlers.c 
+TEST_SRCS := test_uart.c startup.c  system_clock.c fault_handlers.c mpu_config.c 
 TEST_OBJS := $(TEST_SRCS:%.c=$(BUILD_DIR)/%.o)
 TEST_DEPS := $(TEST_OBJS:.o=.d)
 
