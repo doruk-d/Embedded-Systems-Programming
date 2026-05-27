@@ -20,7 +20,7 @@ void hard_fault_dump(uint32_t *stack_frame){
     uint32_t lr = stack_frame[5]; // what called the faulting code
     uint32_t xPSR = stack_frame[7]; // processor state at the fault time
 
-    // use the values to silence the gcc warnings until i implement a uart_printf function 
+    // use the values to silence the gcc warnings 
     (void)pc;
     (void)lr;
     (void)xPSR;
