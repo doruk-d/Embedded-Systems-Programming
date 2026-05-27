@@ -1,19 +1,18 @@
-#ifndef UART_H
-#define UART_H
+#ifndef UART_HEADER_H
+#define UART_HEADER_H
 
 #include <stdint.h>
 
 typedef enum{
-    UART_OK,
-    UART_ERR_INVALID_BAUD
-}uart_err_t;
+    UART_OK = 0,
+    UART_ERR_INVALID_BAUD,
+    TX_OK, 
+    TX_BUFFER_FULL
+}uart_status_t;
 
-uart_err_t uart_init(uint32_t baud);
-void USART2_IRQHandler(void);
-void uart_putc(char c);
-void uart_puts(char *s);
+uart_status_t uart_init(uint32_t baud_rate);   
 uint8_t uart_getc(void);
-void uart_gets(char *s, uint32_t max_len);
-void uart_putint(uint32_t value);
+uart_status_t uart_putc(char c);
+void uart_printf(const char *fmt, ...);
 
-#endif
+#endif 
