@@ -9,8 +9,7 @@ int main(void){
 
     int c;
     while (1){
-        if ((c = uart_getc())== -1)
-            continue;
+        c = uart_getc();
         uart_putc((char)c);
     }
 
