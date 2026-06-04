@@ -7,6 +7,9 @@ extern uint32_t _estack, _sidata, _sdata, _edata, _sbss, _ebss_mpu;
 
 void ResetHandler(void);
 void DefaultHandler(void);
+void SVC_Handler(void) __attribute__ ((weak, alias("DefaultHandler")));
+void PendSV_Handler(void) __attribute__((weak, alias("DefaultHandler")));
+void SysTick_Handler(void) __attribute__((weak, alias("DefaultHandler")));
 void USART2_IRQHandler(void) __attribute__((weak, alias("DefaultHandler"))); 
 
 typedef void (*isr_t)(void);

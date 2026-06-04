@@ -2,8 +2,8 @@
 .thumb
 
 #include "asm_offsets.h"
-#define DWT_CYCCNT_ADDR 0xE0001004
-#define GPIOA_BSRR_ADDR 0x40020018
+#include "gpio.h"
+#include "dwt_regs.h"
 
 .globl PendSV_Handler
 .type PendSV_Handler, %function

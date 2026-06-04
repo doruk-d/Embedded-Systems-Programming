@@ -1,5 +1,4 @@
 #include "uart.h"
-#include <stdint.h>
 
 int main(void){
     if (uart_init(115200) != UART_OK)

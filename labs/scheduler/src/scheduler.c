@@ -1,14 +1,10 @@
 #include "scheduler.h"
-#include "systick.h"
-#include "asm_offsets.h"
-#include "dwt.h"
+#include "scb.h"
+#include "gpio.h"
 #include "measure_gpio.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <stdalign.h>
-
-#define SCB_ICSR (*(volatile uint32_t *)0xE000ED04)
-#define SCB_SHPR3 (*(volatile uint32_t *)0xE000ED20)
 
 #define MAX_TASKS 8
 
@@ -90,7 +86,7 @@ static void scheduler_register(task_t *task){
 
 void scheduler_init(void){
     // set pendsv priority to the least
-    SCB_SHPR3 |= (0xFF << 16);
+    SCB->SHPR3 |= (0xFF << 16);
     
     // if the linked list empty mcu should halt
     if (head == NULL){
@@ -101,17 +97,17 @@ void scheduler_init(void){
     current_task = NULL;
     next_task = head;    
 
-    GPIOA_BSRR = (1 << PIN);
+    GPIOA->BSRR = (1 << PIN);
 
-    SCB_ICSR |= (1 << 28);
+    SCB->ICSR |= (1 << 28);
 }
 
 void scheduler_run(void){
     next_task = current_task->next;
     
-    GPIOA_BSRR = (1 << PIN);
+    GPIOA->BSRR = (1 << PIN);
 
-    SCB_ICSR |= (1 << 28);
+    SCB->ICSR |= (1 << 28);
 }
 
 static void task_remove(void){
@@ -150,7 +146,7 @@ static void task_remove(void){
     __asm__ volatile("dsb");
     
     // trigger a task switch
-    SCB_ICSR |= (1 << 28);
+    SCB->ICSR |= (1 << 28);
 
     __asm__ volatile("cpsie i");
 

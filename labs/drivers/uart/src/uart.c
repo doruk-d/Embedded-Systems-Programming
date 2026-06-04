@@ -1,25 +1,10 @@
 #include "uart.h"
+#include "usart.h"
+#include "rcc.h"
+#include "gpio.h"
+#include "nvic.h"
 #include <stdint.h>
 #include <stdarg.h>
-
-#define RCC_BASE 0x40023800
-#define RCC_AHB1ENR (*(volatile uint32_t *)(RCC_BASE + 0x30))
-#define RCC_APB1ENR (*(volatile uint32_t *)(RCC_BASE + 0x40))
-
-#define GPIOA_BASE 0x40020000
-#define GPIOA_MODER (*(volatile uint32_t *)GPIOA_BASE)
-#define GPIOA_OSPEEDR (*(volatile uint32_t *)(GPIOA_BASE + 0x08))
-#define GPIOA_AFRL (*(volatile uint32_t *)(GPIOA_BASE + 0x20))
-
-
-#define USART2_BASE 0x40004400
-#define USART_SR (*(volatile uint32_t *)USART2_BASE)
-#define USART_DR (*(volatile uint32_t *)(USART2_BASE + 0x04))
-#define USART_BRR (*(volatile uint32_t *)(USART2_BASE + 0x08))
-#define USART_CR1 (*(volatile uint32_t *)(USART2_BASE + 0x0C))
-
-#define NVIC_ISERx 0xE000E100
-#define NVIC_IPRx 0xE000E400
 
 #define USART2_IRQ_N 38
 #define USART2_IRQ_PRI 5
@@ -41,61 +26,60 @@ uart_status_t uart_init(uint32_t baud_rate){
         return UART_ERR_INVALID_BAUD; 
     
     // enable gpio and usart clocks
-    RCC_AHB1ENR |= (1 << 0);
-    RCC_APB1ENR |= (1 << 17);
+    RCC->AHB1ENR |= (1 << 0);
+    RCC->APB1ENR |= (1 << 17);
 
     // configure gpio pins
     // af mode
-    GPIOA_MODER &= ~((0x3 << (TX_PIN * 2)) | (0x3 << (RX_PIN * 2)));
-    GPIOA_MODER |= (0x2 << (TX_PIN * 2)) | (0x2 << (RX_PIN * 2));
+    GPIOA->MODER &= ~((0x3 << (TX_PIN * 2)) | (0x3 << (RX_PIN * 2)));
+    GPIOA->MODER |= (0x2 << (TX_PIN * 2)) | (0x2 << (RX_PIN * 2));
 
     // speed of pins set to low
-    GPIOA_OSPEEDR &= ~((0x3 << (TX_PIN * 2)) | (0x3 << (RX_PIN * 2)));
+    GPIOA->OSPEEDR &= ~((0x3 << (TX_PIN * 2)) | (0x3 << (RX_PIN * 2)));
 
 
     // af values for usart use
-    GPIOA_AFRL &= ~((0xF << (TX_PIN * 4)) | (0xF << (RX_PIN * 4)));
-    GPIOA_AFRL |= (0x7 << (TX_PIN * 4)) | (0x7 << (RX_PIN * 4));
+    GPIOA->AFR[(TX_PIN / 8)] &= ~(0xF << (TX_PIN * 4));
+    GPIOA->AFR[(TX_PIN / 8)] |= (0x7 << (TX_PIN * 4));
+
+    GPIOA->AFR[(RX_PIN / 8)] &= ~(0xF << (RX_PIN * 4));
+    GPIOA->AFR[(RX_PIN / 8)] |= (0x7 << (RX_PIN * 4));
 
 
     // configure USART2
     // baud rate 
-    USART_BRR = (APB1_FREQ + (baud_rate / 2)) / baud_rate;
+    USART2->BRR = (APB1_FREQ + (baud_rate / 2)) / baud_rate;
 
     // oversampling set tp 16 and word length set to 8 bits
-    USART_CR1 &= ~((1 << 15) | (1 << 12));
+    USART2->CR1 &= ~((1 << 15) | (1 << 12));
 
     // rxne interrupt, usart, transmitter and receiver enable
-    USART_CR1 |= (1 << 13) | (1 << 5) | (1 << 3) | (1 << 2);
+    USART2->CR1 |= (1 << 13) | (1 << 5) | (1 << 3) | (1 << 2);
 
     // enable and set priority of the interrupt
-    uint32_t offset_iser = 0x04 * (USART2_IRQ_N / 32);
-    volatile uint32_t *reg_iser = (volatile uint32_t *)(NVIC_ISERx + offset_iser);
-    *reg_iser |= (1 << (USART2_IRQ_N % 32));
-
-    uint32_t offset_ipr = 0x04 * (USART2_IRQ_N / 4);
-    volatile uint32_t *reg_ipr = (volatile uint32_t *)(NVIC_IPRx + offset_ipr);
-    *reg_ipr |=  (USART2_IRQ_PRI << ((USART2_IRQ_N % 4) * 8 + 4));
+    nvic_set_priority(USART2_IRQ_PRI, USART2_IRQ_N);
+    nvic_enable_irq(USART2_IRQ_N);
 
     return UART_OK;
 }
 
 void USART2_IRQHandler(void){
-    if (((USART_SR >> 7) & 1) && ((USART_CR1 >> 7) & 1)){
+    if (((USART2->SR >> 7) & 1) && ((USART2->CR1 >> 7) & 1)){
         if (tx_head != tx_tail){
 
             uint8_t c = tx_buffer[tx_tail & (MAX_SIZE - 1)];
             tx_tail++;
 
-            USART_DR = c;
+            USART2->DR = c;
 
             if (tx_head == tx_tail)
-                USART_CR1 &= ~(1 << 7);
+                USART2->CR1 &= ~(1 << 7);
         }
     }
 
-    if (((USART_SR >> 5) & 1) && ((USART_CR1 >> 5) & 1)){
-        uint8_t c = USART_DR;
+    // implement ore check
+    if (((USART2->SR >> 5) & 1) && ((USART2->CR1 >> 5) & 1)){
+        uint8_t c = USART2->DR;
     
         if ((rx_head - rx_tail) != MAX_SIZE){
         
@@ -129,7 +113,7 @@ uart_status_t uart_putc(char c){
     __asm__ volatile("cpsie i");
 
     // txeie enable
-    USART_CR1 |= (1 << 7);
+    USART2->CR1 |= (1 << 7);
 
     return TX_OK;
 }
@@ -152,7 +136,7 @@ static void uart_print_int(int val){
     int i = 0;
     while (uval != 0){
         uint8_t digit = uval % 10;
-        digits_arr[i++] = digit + '0'; 
+        digits_arr[i++] = digit + '0';
         uval /= 10;
     }
 
@@ -186,8 +170,8 @@ void uart_printf(const char *fmt, ...){
                     uart_print_s(str);
                     break;
                 }
-                case '%':
-                    (void)uart_putc('%');
+                default:
+                    (void)uart_putc(*fmt);
                     break;
             }
             fmt++;

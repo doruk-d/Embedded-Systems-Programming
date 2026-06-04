@@ -1,8 +1,6 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <stdint.h>
-
 typedef enum {
     SYS_YIELD
 }svc_call_t;

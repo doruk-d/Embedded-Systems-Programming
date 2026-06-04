@@ -15,7 +15,7 @@ __attribute__((naked)) void HardFaultHandler(void){
             );
 }
 
-void hard_fault_dump(uint32_t *stack_frame){
+void hard_fault_dump(const uint32_t *stack_frame){
     uint32_t pc = stack_frame[6]; // where the fault happened
     uint32_t lr = stack_frame[5]; // what called the faulting code
     uint32_t xPSR = stack_frame[7]; // processor state at the fault time

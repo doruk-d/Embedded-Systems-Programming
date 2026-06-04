@@ -1,0 +1,6 @@
+#ifndef PERIPH_REGS_H
+#define PERIPH_REGS_H
+
+#define PERIPHERAL_BASE 0x40000000UL
+
+#endif

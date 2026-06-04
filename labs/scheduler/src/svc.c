@@ -8,5 +8,8 @@ void SVC_Handler_c(uint32_t *frame){
         case SYS_YIELD:
             scheduler_run();
             break;
+        default:
+            break;
+
     }
 }
