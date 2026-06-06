@@ -1,7 +1,7 @@
-#ifndef SCB_REGS_H
-#define SCB_REGS_H
+#pragma once
 
 #include <stdint.h>
+#include "bit_ops.h"
 
 typedef struct{
     uint32_t _reserved0;
@@ -14,4 +14,9 @@ typedef struct{
 #define SCB_BASE 0xE000ED00UL
 #define SCB ((volatile sys_regs_t *)SCB_BASE)
 
-#endif
+// field descriptors
+#define SCB_ICSR_PENDSVSET FIELD(1,28)
+
+#define SCB_SHPR3_PRI_14 FIELD(8,16)
+
+#define SCB_SHCSR_MEMFAULTENA FIELD(1,16)

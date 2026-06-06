@@ -29,13 +29,13 @@ task_t *next_task = NULL;
 
 volatile uint32_t sw_start_cyccnt, sw_end_cyccnt;
 
-task_init_t task_create(void *arg, void (*task_func)(void *)){
+system_status_t task_create(void *arg, void (*task_func)(void *)){
     if (task_func == NULL)
-        return FAIL;
+        return ERROR;
 
     // if limit of maximum tasks reached it should just skip
     if (count_of_tasks == MAX_TASKS)
-        return FAIL;
+        return ERROR;
 
     task_t *task = &task_array[count_of_tasks++];
 
@@ -64,7 +64,7 @@ task_init_t task_create(void *arg, void (*task_func)(void *)){
 
     scheduler_register(task);
 
-    return SUCCESS;
+    return OK;
 }
 
 void yield(void){
@@ -86,7 +86,7 @@ static void scheduler_register(task_t *task){
 
 void scheduler_init(void){
     // set pendsv priority to the least
-    SCB->SHPR3 |= (0xFF << 16);
+    SCB->SHPR3 |= FIELD_VAL(SCB_SHPR3_PRI_14, 0xFF);
     
     // if the linked list empty mcu should halt
     if (head == NULL){
@@ -97,17 +97,17 @@ void scheduler_init(void){
     current_task = NULL;
     next_task = head;    
 
-    GPIOA->BSRR = (1 << PIN);
+    GPIOA->BSRR = FIELD_VAL(GPIO_BSRR(PIN), 1);
 
-    SCB->ICSR |= (1 << 28);
+    SCB->ICSR |= FIELD_VAL(SCB_ICSR_PENDSVSET, 1);
 }
 
 void scheduler_run(void){
     next_task = current_task->next;
     
-    GPIOA->BSRR = (1 << PIN);
+    GPIOA->BSRR = FIELD_VAL(GPIO_BSRR(PIN), 1);
 
-    SCB->ICSR |= (1 << 28);
+    SCB->ICSR |= FIELD_VAL(SCB_ICSR_PENDSVSET, 1);
 }
 
 static void task_remove(void){
@@ -146,7 +146,7 @@ static void task_remove(void){
     __asm__ volatile("dsb");
     
     // trigger a task switch
-    SCB->ICSR |= (1 << 28);
+    SCB->ICSR |= FIELD_VAL(SCB_ICSR_PENDSVSET, 1);
 
     __asm__ volatile("cpsie i");
 

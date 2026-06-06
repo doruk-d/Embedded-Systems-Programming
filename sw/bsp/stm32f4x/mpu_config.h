@@ -1,6 +1,3 @@
-#ifndef MPU_CONFIG
-#define MPU_CONFIG
+#pragma once
 
 void mpu_init(void);
-
-#endif

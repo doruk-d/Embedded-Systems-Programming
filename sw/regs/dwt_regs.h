@@ -1,11 +1,11 @@
-#ifndef DWT_REGS_H
-#define DWT_REGS_H
+#pragma once
 
 #define DWT_CYCCNT_ADDR 0xE0001004UL
 
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include "bit_ops.h"
 
 #define DEMCR (*(volatile uint32_t *)0xE000EDFCUL)
 
@@ -17,6 +17,10 @@ typedef struct{
 #define DWT_BASE 0xE0001000UL
 #define DWT ((volatile dwt_regs_t *)DWT_BASE)
 
-#endif
+// position bit and width packing
+#define DEMCR_TRCENA FIELD(1, 24)
+
+#define DWT_CTRL_CYCCNTENA FIELD(1,0)
+#define DWT_CTRL_NOCYCCNT FIELD(1,25)
 
 #endif

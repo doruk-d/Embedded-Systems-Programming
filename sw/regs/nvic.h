@@ -1,5 +1,4 @@
-#ifndef NVIC_REGS_H
-#define NVIC_REGS_H
+#pragma once
 
 #include <stdint.h>
 
@@ -25,5 +24,3 @@ static inline void nvic_set_priority(uint32_t irq_pri, uint32_t irq_num) {
     NVIC->IPR[offset] &= ~(0xFF << shift);
     NVIC->IPR[offset] |= ((irq_pri & 0xF) << (shift + 4)); // first 4 bits on this board is ignored
 }
-
-#endif

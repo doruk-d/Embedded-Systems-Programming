@@ -1,6 +1,3 @@
-#ifndef SYSTICK_H
-#define SYSTICK_H
+#pragma once
 
 void systick_init(void);
-
-#endif

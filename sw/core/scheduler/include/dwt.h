@@ -1,11 +1,4 @@
-#ifndef DWT_H
-#define DWT_H
+#pragma once
+#include "common.h"
 
-typedef enum{
-    SUPPORTED_CYCLE_COUNTER = 0,
-    UNSUPPORTED_CYCLE_COUNTER
-}cyc_cnt_t;
-
-cyc_cnt_t dwt_init(void);
-
-#endif
+system_status_t dwt_init(void);

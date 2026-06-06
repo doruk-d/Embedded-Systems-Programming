@@ -1,7 +1,7 @@
-#ifndef SYSTICK_REGS_H
-#define SYSTICK_REGS_H
+#pragma once
 
 #include <stdint.h>
+#include "bit_ops.h"
 
 typedef struct {
     volatile uint32_t CTRL;
@@ -12,4 +12,7 @@ typedef struct {
 #define SYSTICK_BASE 0xE000E010UL
 #define STK ((volatile stk_regs_t *)SYSTICK_BASE)
 
-#endif SYSTICK_REGS_H
+// field descriptors
+#define SYSTICK_CTRL_ENABLE FIELD(1,0)
+#define SYSTICK_CTRL_TICKINT FIELD(1,1)
+#define SYSTICK_CTRL_CLKSOURCE FIELD(1,2)

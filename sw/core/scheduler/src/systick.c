@@ -11,7 +11,8 @@ void systick_init(void){
 
     STK->VAL = 0;
 
-    STK->CTRL = (1 << 2) | (1 << 1) | (1 << 0);
+    STK->CTRL = FIELD_VAL(SYSTICK_CTRL_CLKSOURCE, 1) | FIELD_VAL(SYSTICK_CTRL_TICKINT, 1) |
+                FIELD_VAL(SYSTICK_CTRL_ENABLE, 1);
     
 }
 

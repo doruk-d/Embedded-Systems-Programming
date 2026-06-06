@@ -1,8 +1,5 @@
-#ifndef MEASURE_GPIO_H
-#define MEASURE_GPIO_H
+#pragma once
 
 #define PIN 9
 
 void gpio_init(void);
-
-#endif

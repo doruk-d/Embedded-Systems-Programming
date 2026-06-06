@@ -1,6 +1,3 @@
-#ifndef ASM_OFFSETS_H
-#define ASM_OFFSETS_H
+#pragma once
 
-#define OFFSET_SP 0 
-
-#endif
+#define OFFSET_SP 0

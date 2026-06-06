@@ -1,15 +1,15 @@
 #include "dwt.h"
 #include "dwt_regs.h"
 
-cyc_cnt_t dwt_init(void){
-    DEMCR |= (1 << 24); // enables dwt and imt units 
+system_status_t dwt_init(void){
+    DEMCR |= FIELD_VAL(DEMCR_TRCENA, 1); // enables dwt and imt units
 
-    if ((DWT->CTRL >> 25) & 0x1)
-        return UNSUPPORTED_CYCLE_COUNTER;
+    if (FIELD_READ(DWT->CTRL, DWT_CTRL_NOCYCCNT))
+        return ERROR;
     
     DWT->CYCCNT = 0; // reset the value of cyccnt to ensure a clean start
 
-    DWT->CTRL |= (1 << 0); // enables cyccnt
+    DWT->CTRL |= FIELD_VAL(DWT_CTRL_CYCCNTENA, 1); // enables cyccnt
                           
-    return SUPPORTED_CYCLE_COUNTER;
+    return OK;
 }

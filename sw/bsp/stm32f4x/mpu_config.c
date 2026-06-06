@@ -26,7 +26,7 @@ void mpu_init(void){
     __asm__ volatile("cpsid i" ::: "memory");
 
     // check if mpu is present
-    if (((MPU->TYPER >> 8) & 0xFF) == 0x00){
+    if (FIELD_READ(MPU->TYPER, MPU_TYPER_DREGION) == 0x00){
         __asm__ volatile("bkpt #0");
         while(1); // safety net in case execution continues
     }
@@ -48,22 +48,24 @@ void mpu_init(void){
 
     uint32_t val = 0;
     // set TEX, S, C, B according to the datasheet
-    val |= (0b000 << 19) | (0 << 18) | (1 << 17) | (0 << 16);
+    val |= FIELD_VAL(MPU_RASR_TEX, 0b000) | FIELD_VAL(MPU_RASR_B, 1);
     // set XN, AP, SIZE, ENABLE
-    val |= (0 << 28) | (0b111 << 24) | (mpu_size_val(FLASH_SIZE) << 1) | (1 << 0);
+    val |= FIELD_VAL(MPU_RASR_AP ,0b111) | FIELD_VAL(MPU_RASR_SIZE, mpu_size_val(FLASH_SIZE)) |
+           FIELD_VAL(MPU_RASR_ENABLE ,1);
 
     MPU->RASR = val;
     val = 0;
 
 
-    // 1: SRAM size is not a power of 2 
-    // split it into two regions to match the physical size 
+    // 1: SRAM size is not a power of 2
+    // split it into two regions to match the physical size
     MPU->RNR = 1;
 
     MPU->RBAR = SRAM_BASE;
 
-    val |= (0b000 << 19) | (1 << 18) | (1 << 17) | (0 << 16); 
-    val |= (1 << 28) | (0b011 << 24) | (mpu_size_val(64 * 1024U) << 1) | (1 << 0);
+    val |= FIELD_VAL(MPU_RASR_TEX, 0b000) | FIELD_VAL(MPU_RASR_S, 1) | FIELD_VAL(MPU_RASR_B, 1);
+    val |= FIELD_VAL(MPU_RASR_XN, 1) | FIELD_VAL(MPU_RASR_AP, 0b011) |
+           FIELD_VAL(MPU_RASR_SIZE, mpu_size_val(64 * 1024U)) | FIELD_VAL(MPU_RASR_ENABLE ,1);
 
     MPU->RASR = val;
     val = 0;
@@ -73,8 +75,9 @@ void mpu_init(void){
 
     MPU->RBAR = SRAM_BASE + (64 * 1024U);
 
-    val |= (0b000 << 19) | (1 << 18) | (1 << 17) | (0 << 16); 
-    val |= (1 << 28) | (0b011 << 24) | (mpu_size_val(32 * 1024U) << 1) | (1 << 0);
+    val |= FIELD_VAL(MPU_RASR_TEX, 0b000) | FIELD_VAL(MPU_RASR_S, 1) | FIELD_VAL(MPU_RASR_B, 1);
+    val |= FIELD_VAL(MPU_RASR_XN, 1) | FIELD_VAL(MPU_RASR_AP, 0b011) |
+           FIELD_VAL(MPU_RASR_SIZE, mpu_size_val(32 * 1024U)) | FIELD_VAL(MPU_RASR_ENABLE ,1);
 
     MPU->RASR = val;
     val = 0;
@@ -87,8 +90,9 @@ void mpu_init(void){
 
     MPU->RBAR = (uint32_t)&_sstack;
 
-    val |= (0b000 << 19) | (1 << 18) | (1 << 17) | (0 << 16);
-    val |= (1 << 28) | (0b011 << 24) | (mpu_size_val(size_stack) << 1) | (1 << 0);
+    val |= FIELD_VAL(MPU_RASR_TEX, 0b000) | FIELD_VAL(MPU_RASR_S, 1) | FIELD_VAL(MPU_RASR_B, 1);
+    val |= FIELD_VAL(MPU_RASR_XN, 1) | FIELD_VAL(MPU_RASR_AP, 0b011) |
+           FIELD_VAL(MPU_RASR_SIZE, mpu_size_val(size_stack)) | FIELD_VAL(MPU_RASR_ENABLE ,1);
 
     MPU->RASR = val;
     val = 0;
@@ -101,42 +105,45 @@ void mpu_init(void){
 
     MPU->RBAR = (uint32_t)&_sdata;
 
-    val |= (0b000 << 19) | (1 << 18) | (1 << 17) | (0 << 16);
-    val |= (1 << 28) | (0b011 << 24) | (mpu_size_val(size_data_bss) << 1) | (1 << 0);
+    val |= FIELD_VAL(MPU_RASR_TEX, 0b000) | FIELD_VAL(MPU_RASR_S, 1) | FIELD_VAL(MPU_RASR_B, 1);
+    val |= FIELD_VAL(MPU_RASR_XN, 1) | FIELD_VAL(MPU_RASR_AP, 0b011) |
+           FIELD_VAL(MPU_RASR_SIZE, mpu_size_val(size_data_bss)) | FIELD_VAL(MPU_RASR_ENABLE ,1);
 
     MPU->RASR = val;
     val = 0;
 
 
     // 5: stack guard  to detect collision between .stack and .data/.bss
-    // triggers a fault on overflow from either side 
+    // triggers a fault on overflow from either side
     MPU->RNR = 5;
 
     MPU->RBAR = (uint32_t)&_sstack;
 
-    val |= (0b000 << 19) | (1 << 18) | (1 << 17) | (0 << 16);
-    val |= (1 << 28) | (0b000 << 24) | (mpu_size_val(STACK_G_SIZE) << 1) | (1 << 0);
+    val |= FIELD_VAL(MPU_RASR_TEX, 0b000) | FIELD_VAL(MPU_RASR_S, 1) | FIELD_VAL(MPU_RASR_B, 1);
+    val |= FIELD_VAL(MPU_RASR_XN, 1) | FIELD_VAL(MPU_RASR_AP, 0b000) |
+           FIELD_VAL(MPU_RASR_SIZE, mpu_size_val(STACK_G_SIZE)) | FIELD_VAL(MPU_RASR_ENABLE ,1);
 
     MPU->RASR = val;
     val = 0;
 
 
-    // 6: peripherals 
+    // 6: peripherals
     MPU->RNR = 6;
 
     MPU->RBAR = PERIPHERAL_BASE;
 
     // configure as device
-    val |= (0b000 << 19) | (1 << 18) | (0 << 17) | (1 << 16);
-    val |= (1 << 28) | (0b011 << 24) | (mpu_size_val(PERIPHERAL_SIZE) << 1) | (1 << 0);
+    val |= FIELD_VAL(MPU_RASR_TEX, 0b000) | FIELD_VAL(MPU_RASR_S, 1) | FIELD_VAL(MPU_RASR_C, 1);
+    val |= FIELD_VAL(MPU_RASR_XN, 1) | FIELD_VAL(MPU_RASR_AP, 0b011) |
+           FIELD_VAL(MPU_RASR_SIZE, mpu_size_val(PERIPHERAL_SIZE)) | FIELD_VAL(MPU_RASR_ENABLE ,1);
 
     MPU->RASR = val;
     val = 0;
 
     // if buffer delay is a concern add strongly ordered configurations here
-    
+
     // enable PRIVDEFENA for fallback in case mpu mapping is not enough and enable mpu
-    MPU->CTRL |= (1 << 2) | (1 << 0);
+    MPU->CTRL |= FIELD_VAL(MPU_CTRL_PRIVDEFENA, 1) | FIELD_VAL(MPU_CTRL_ENABLE, 1);
 
     // ensure all data synchronization is complete
     __asm__ volatile("dsb" ::: "memory");
@@ -146,8 +153,7 @@ void mpu_init(void){
     __asm__ volatile("cpsie i" ::: "memory");
 
     // enable memory management fault
-    SCB->SHCSR |= (1 << 16);
+    SCB->SHCSR |= FIELD_VAL(SCB_SHCSR_MEMFAULTENA, 1);
 
 }
-
 

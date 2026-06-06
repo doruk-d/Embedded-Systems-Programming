@@ -1,11 +1,11 @@
-#ifndef GPIO_REGS_H
-#define GPIO_REGS_H
+#pragma once
 
 #define GPIOA_BSRR_ADDR 0x40020018UL
 
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include "bit_ops.h"
 
 typedef struct{
     volatile uint32_t MODER;
@@ -20,6 +20,9 @@ typedef struct{
 #define GPIOA_BASE 0x40020000UL
 #define GPIOA ((volatile gpio_regs_t *)GPIOA_BASE)
 
-#endif
+#define GPIO_MODER(pin) FIELD(2, ((pin) * 2))
+#define GPIO_BSRR(pin) FIELD(1, (pin))
+#define GPIO_OSPEEDR(pin) FIELD(2, ((pin) * 2))
+#define GPIO_AFR(pin) FIELD(4, ((pin) * 4))
 
 #endif

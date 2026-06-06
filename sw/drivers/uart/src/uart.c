@@ -21,29 +21,29 @@ static volatile uint32_t tx_head, tx_tail;
 static volatile uint8_t rx_buffer[MAX_SIZE];
 static volatile uint32_t rx_head, rx_tail;
 
-uart_status_t uart_init(uint32_t baud_rate){    
+system_status_t uart_init(uint32_t baud_rate){
     if (baud_rate == 0 || baud_rate > 2625000) 
-        return UART_ERR_INVALID_BAUD; 
+        return ERROR;
     
     // enable gpio and usart clocks
-    RCC->AHB1ENR |= (1 << 0);
-    RCC->APB1ENR |= (1 << 17);
+    RCC->AHB1ENR |= FIELD_VAL(RCC_AHB1ENR_GPIOAEN, 1);
+    RCC->APB1ENR |= FIELD_VAL(RCC_APB1ENR_USART2EN, 1);
 
     // configure gpio pins
     // af mode
-    GPIOA->MODER &= ~((0x3 << (TX_PIN * 2)) | (0x3 << (RX_PIN * 2)));
-    GPIOA->MODER |= (0x2 << (TX_PIN * 2)) | (0x2 << (RX_PIN * 2));
+    GPIOA->MODER &= FIELD_CLEAR_MASK(GPIO_MODER(TX_PIN)) & FIELD_CLEAR_MASK(GPIO_MODER(RX_PIN));
+    GPIOA->MODER |= FIELD_VAL(GPIO_MODER(TX_PIN), 0x2) | FIELD_VAL(GPIO_MODER(RX_PIN), 0x2);
 
     // speed of pins set to low
-    GPIOA->OSPEEDR &= ~((0x3 << (TX_PIN * 2)) | (0x3 << (RX_PIN * 2)));
+    GPIOA->OSPEEDR &= FIELD_CLEAR_MASK(GPIO_OSPEEDR(TX_PIN)) & FIELD_CLEAR_MASK(GPIO_OSPEEDR(RX_PIN));
 
 
     // af values for usart use
-    GPIOA->AFR[(TX_PIN / 8)] &= ~(0xF << (TX_PIN * 4));
-    GPIOA->AFR[(TX_PIN / 8)] |= (0x7 << (TX_PIN * 4));
+    GPIOA->AFR[(TX_PIN / 8)] &= FIELD_CLEAR_MASK(GPIO_AFR(TX_PIN));
+    GPIOA->AFR[(TX_PIN / 8)] |= FIELD_VAL(GPIO_AFR(TX_PIN), 0x7);
 
-    GPIOA->AFR[(RX_PIN / 8)] &= ~(0xF << (RX_PIN * 4));
-    GPIOA->AFR[(RX_PIN / 8)] |= (0x7 << (RX_PIN * 4));
+    GPIOA->AFR[(RX_PIN / 8)] &= FIELD_CLEAR_MASK(GPIO_AFR(RX_PIN));
+    GPIOA->AFR[(RX_PIN / 8)] |= FIELD_VAL(GPIO_AFR(RX_PIN), 0x7);
 
 
     // configure USART2
@@ -51,20 +51,21 @@ uart_status_t uart_init(uint32_t baud_rate){
     USART2->BRR = (APB1_FREQ + (baud_rate / 2)) / baud_rate;
 
     // oversampling set tp 16 and word length set to 8 bits
-    USART2->CR1 &= ~((1 << 15) | (1 << 12));
+    USART2->CR1 &= FIELD_CLEAR_MASK(USART_CR1_OVER8) & FIELD_CLEAR_MASK(USART_CR1_M);
 
     // rxne interrupt, usart, transmitter and receiver enable
-    USART2->CR1 |= (1 << 13) | (1 << 5) | (1 << 3) | (1 << 2);
+    USART2->CR1 |= FIELD_VAL(USART_CR1_UE, 1) | FIELD_VAL(USART_CR1_RXNEIE, 1) | FIELD_VAL(USART_CR1_TE, 1) |
+                   FIELD_VAL(USART_CR1_RE, 1);
 
     // enable and set priority of the interrupt
     nvic_set_priority(USART2_IRQ_PRI, USART2_IRQ_N);
     nvic_enable_irq(USART2_IRQ_N);
 
-    return UART_OK;
+    return OK;
 }
 
 void USART2_IRQHandler(void){
-    if (((USART2->SR >> 7) & 1) && ((USART2->CR1 >> 7) & 1)){
+    if (FIELD_READ(USART2->SR, USART_SR_TXE) && FIELD_READ(USART2->CR1,USART_CR1_TXEIE)){
         if (tx_head != tx_tail){
 
             uint8_t c = tx_buffer[tx_tail & (MAX_SIZE - 1)];
@@ -73,12 +74,11 @@ void USART2_IRQHandler(void){
             USART2->DR = c;
 
             if (tx_head == tx_tail)
-                USART2->CR1 &= ~(1 << 7);
+                USART2->CR1 &= FIELD_CLEAR_MASK(USART_CR1_TXEIE);
         }
     }
 
-    // implement ore check
-    if (((USART2->SR >> 5) & 1) && ((USART2->CR1 >> 5) & 1)){
+    if (FIELD_READ(USART2->SR, USART_SR_RXNE) && FIELD_READ(USART2->CR1, USART_CR1_RXNEIE)){
         uint8_t c = USART2->DR;
     
         if ((rx_head - rx_tail) != MAX_SIZE){
@@ -99,12 +99,12 @@ uint8_t uart_getc(void){
     return c;
 }
 
-uart_status_t uart_putc(char c){
+system_status_t uart_putc(char c){
     __asm__ volatile("cpsid i");
 
     if (tx_head - tx_tail == MAX_SIZE){
         __asm__ volatile("cpsie i");
-        return TX_BUFFER_FULL;
+        return ERROR;
     }
  
     tx_buffer[tx_head & (MAX_SIZE - 1)] = (uint8_t)c;
@@ -113,9 +113,9 @@ uart_status_t uart_putc(char c){
     __asm__ volatile("cpsie i");
 
     // txeie enable
-    USART2->CR1 |= (1 << 7);
+    USART2->CR1 |= FIELD_VAL(USART_CR1_TXEIE, 1);
 
-    return TX_OK;
+    return OK;
 }
 
 static void uart_print_int(int val){

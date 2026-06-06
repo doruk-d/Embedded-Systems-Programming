@@ -4,39 +4,37 @@
 
 void system_clock_init(void){
     // turn the PLL clock off 
-    RCC->CR &= ~(1 << 24);
+    RCC->CR &= FIELD_CLEAR_MASK(RCC_CR_PLLON);
 
     // make sure it is locked
-    while(((RCC->CR >> 25) & 0x1));
+    while(FIELD_READ(RCC->CR, RCC_CR_PLLRDY));
 
     // set HSE on and wait for the signals to settle
-    RCC->CR |= (1 << 16);
+    RCC->CR |= FIELD_VAL(RCC_CR_HSEON, 1);
 
-    while(!((RCC->CR >> 17) & 0x1));
+    while(!(FIELD_READ(RCC->CR, RCC_CR_HSERDY)));
 
     // configure PLL
-    RCC->PLLCFGR = (8 << 0) | // PLLM
-                  (168 << 6) | // PLLN
-                  (0 << 16) | // PLLP
-                  (1 << 22) | // PLLSRC
-                  (7 << 24); // PLLQ
-
+    RCC->PLLCFGR = FIELD_VAL(RCC_PLLCFGR_PLLM, 8) |
+                FIELD_VAL(RCC_PLLCFGR_PLLN, 168) |
+                FIELD_VAL(RCC_PLLCFGR_PLLSRC, 1) |
+                FIELD_VAL(RCC_PLLCFGR_PLLQ, 7);
+                // PLLP set to 0 by direct assignment
     // enable data, instruction caches, prefetch for lower latency and flash latency for safe reads
-    FLASH_ACR |= (1 << 10) | (1 << 9) | (1 << 8) | (2 << 0);
+    FLASH_ACR |= FIELD_VAL(FLASH_ACR_DCEN, 1) | FIELD_VAL(FLASH_ACR_ICEN, 1) | FIELD_VAL(FLASH_ACR_PRFTEN, 1) |
+                 FIELD_VAL(FLASH_ACR_LATENCY, 2);
 
     // set the prescalers for APBx buses
-    RCC->CFGR &= ~((7 << 13) | (7 << 10));
-    RCC->CFGR |= (4 << 10);
+    RCC->CFGR &= FIELD_CLEAR_MASK(RCC_CFGR_PPRE1) & FIELD_CLEAR_MASK(RCC_CFGR_PPRE2);
+    RCC->CFGR |= FIELD_VAL(RCC_CFGR_PPRE1, 4);
 
     // set the PLL on wait for it to settle then set it as sysclk
-    RCC->CR |= (1 << 24);
+    RCC->CR |= FIELD_VAL(RCC_CR_PLLON, 1);
 
-    while(!((RCC->CR >> 25) & 0x1));
+    while(!(FIELD_READ(RCC->CR, RCC_CR_PLLRDY)));
 
-    RCC->CFGR |= (2 << 0);
+    RCC->CFGR |= FIELD_VAL(RCC_CFGR_SW, 2);
 
     // wait for it to lock
-    while((((RCC->CFGR >> 2) & 0x3) != 0x2));
-
+    while(FIELD_READ(RCC->CFGR, RCC_CFGR_SWS) != 0x2);
 }
-

@@ -1,7 +1,4 @@
-#ifndef FAULT_HANDLERS_H
-#define FAULT_HANDLERS_H
+#pragma once
 
 void MemManageHandler(void);
 void HardFaultHandler(void);
-
-#endif
